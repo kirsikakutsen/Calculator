@@ -1,29 +1,26 @@
 package com.example.calculator.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,15 +29,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,6 +39,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.calculator.R
+import com.example.calculator.ui.buttons.ActionButton
+import com.example.calculator.ui.buttons.Button
+import com.example.calculator.ui.buttons.ButtonType
+import com.example.calculator.ui.buttons.ChangeThemeButton
+import com.example.calculator.ui.buttons.DeleteAllButton
+import com.example.calculator.ui.buttons.EqualsButton
+import com.example.calculator.ui.buttons.ValueButton
 import com.example.calculator.ui.theme.CalculatorTheme
 
 
@@ -64,10 +62,13 @@ fun CalculatorScreen(
         modifier = modifier,
         onThemeSwitched = onThemeSwitched,
         isDarkTheme = isDarkTheme,
-        onDeleteClicked = { viewModel.deleteLastCharacter() },
         onClearClicked = { viewModel.clear() },
         onActionClicked = { action: String ->
-            viewModel.updateEquation(action)
+            if (action == "delete") {
+                viewModel.deleteLastCharacter()
+            } else {
+                viewModel.updateEquation(action)
+            }
         },
         onResultClicked = { viewModel.calculateResult() },
         result = result,
@@ -85,7 +86,6 @@ fun CalculatorScreenContent(
     onActionClicked: (action: String) -> Unit,
     onClearClicked: () -> Unit,
     onResultClicked: () -> Unit,
-    onDeleteClicked: () -> Unit
 ) {
     Column(modifier = modifier) {
         DisplaySection(
@@ -102,7 +102,6 @@ fun CalculatorScreenContent(
             onActionClicked = onActionClicked,
             onClearClicked = onClearClicked,
             onResultClicked = onResultClicked,
-            onDeleteClicked = onDeleteClicked
         )
     }
 }
@@ -180,7 +179,6 @@ fun ButtonsSection(
     onActionClicked: (action: String) -> Unit,
     onClearClicked: () -> Unit,
     onResultClicked: () -> Unit,
-    onDeleteClicked: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -197,304 +195,83 @@ fun ButtonsSection(
             ),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4)
-            ) {
-                item { ChangeThemeButton(
-                    modifier = Modifier.size(64.dp),
-                    onClick = { onThemeSwitched() },
-                    isDarkTheme = isDarkTheme
-                ) }
-                item { IconButton(
-                    painter = painterResource(id = R.drawable.multiplication_icon),
-                    contentDescription = "multiply",
-                    onClick = { onActionClicked(" x ") },
+            Row {
+                LazyHorizontalGrid(
                     modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp)
-                ) }
-                item { IconButton(
-                    painter = painterResource(id = R.drawable.division_icon),
-                    contentDescription = "divide",
-                    onClick = { onActionClicked(" / ") },
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp)
-                ) }
-                item { IconButton(
-                    painter = painterResource(id = R.drawable.backspace_icon),
-                    contentDescription = "delete",
-                    onClick = { onDeleteClicked() },
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp)
-                ) }
+                        .weight(1f)
+                        .padding(20.dp),
+                    rows = GridCells.Fixed(5),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    items(
+                        items = Button.generateButtonList(),
+                        span = { item ->
+                            if (item.type == ButtonType.EQUALS) {
+                                GridItemSpan(2)
+                            } else {
+                                GridItemSpan(1)
+                            }
+                        }
+                    ) { item ->
+                        when (item.type) {
+                            ButtonType.VALUE -> {
+                                ValueButton(
+                                    text = item.value.toString(),
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .aspectRatio(1f),
+                                    onClick = { onActionClicked(item.value.toString()) },
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
 
-                item { ValueButton(
-                    text = "7",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("7") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = "8",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("8") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = "9",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("9") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { IconButton(
-                    painter = painterResource(id = R.drawable.subtraction_icon),
-                    contentDescription = "minus",
-                    onClick = { onActionClicked(" - ") },
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp)
-                ) }
+                            ButtonType.DELETE_ALL -> {
+                                DeleteAllButton(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .aspectRatio(1f),
+                                    onClick = onClearClicked
+                                )
+                            }
 
-                item { ValueButton(
-                    text = "4",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("4") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = "5",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("5") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = "6",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("6") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { IconButton(
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    painter = painterResource(id = R.drawable.addition_icon),
-                    contentDescription = "plus",
-                    onClick = { onActionClicked(" + ") },
-                ) }
+                            ButtonType.CHANGE_THEME -> {
+                                ChangeThemeButton(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .aspectRatio(1f),
+                                    onClick = onThemeSwitched,
+                                    isDarkTheme = isDarkTheme
+                                )
+                            }
 
-                item { ValueButton(
-                    text = "1",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("1") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = "2",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("2") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = "3",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("3") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { EqualsButton(
-                    modifier = Modifier.padding(10.dp),
-                    onClick = { onResultClicked() }
-                ) }
+                            ButtonType.EQUALS -> {
+                                EqualsButton(
+                                    modifier = Modifier
+                                        .padding(vertical = 10.dp)
+                                        .width(64.dp),
+                                    onClick = onResultClicked
+                                )
+                            }
 
-                item { DeleteAllButton(
-                    onClick = { onClearClicked() },
-                    modifier = Modifier.size(64.dp)
-                ) }
-                item { ValueButton(
-                    text = "0",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked("0") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
-                item { ValueButton(
-                    text = ".",
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .size(64.dp),
-                    onClick = { onActionClicked(".") },
-                    color = MaterialTheme.colorScheme.onPrimary
-                ) }
+                            ButtonType.ACTION -> {
+                                item.value.toString().toIntOrNull()?.let {
+                                    if (item.action == null) {
+                                        return@items
+                                    }
+                                    ActionButton(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .aspectRatio(1f),
+                                        painter = painterResource(it),
+                                        onClick = { onActionClicked(item.action) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }
-    }
-}
-
-
-@Composable
-fun DeleteAllButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        onClick = onClick
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "AC",
-                style = TextStyle(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFFED0E98),
-                            Color(0xFFFE5A2D)
-                        )
-                    ),
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 25.sp
-                ),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun ChangeThemeButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    isDarkTheme: Boolean,
-) {
-    OutlinedButton(
-        modifier = modifier,
-        contentPadding = PaddingValues(),
-        onClick = onClick,
-        border = BorderStroke(
-            width = 3.dp,
-            color = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        val imageRes =
-            if (isDarkTheme) R.drawable.sun_icon else R.drawable.moon_icon
-        val imageSize = if (isDarkTheme) 32.dp else 24.dp
-        Image(
-            painter = painterResource(imageRes),
-            contentDescription = "theme switch",
-            modifier = Modifier.size(imageSize),
-            contentScale = ContentScale.FillBounds
-        )
-    }
-}
-
-@Composable
-fun IconButton(
-    painter: Painter,
-    contentDescription: String,
-    onClick: () -> Unit,
-    modifier: Modifier
-) {
-    Card(
-        modifier = modifier,
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-        onClick = onClick
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painter,
-                tint = MaterialTheme.colorScheme.onPrimary,
-                contentDescription = contentDescription,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun ValueButton(
-    modifier: Modifier = Modifier,
-    text: String,
-    onClick: () -> Unit,
-    color: Color
-) {
-    Card(
-        modifier = modifier,
-        onClick = onClick,
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text(
-                modifier = Modifier.align(alignment = Alignment.Center),
-                text = text,
-                fontSize = 25.sp,
-                color = color
-            )
-        }
-    }
-}
-
-@Composable
-fun EqualsButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    ElevatedCard(
-        elevation = CardDefaults.cardElevation(defaultElevation = 30.dp),
-        shape = RoundedCornerShape(35.dp),
-        modifier = modifier,
-        onClick = onClick
-    ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFFED0E98),
-                            Color(0xFFFE5A2D)
-                        )
-                    )
-                )
-                .padding(top = 51.dp, bottom = 50.dp, start = 0.dp, end = 0.dp)
-                .size(64.dp)
-        )
-        {
-            Text(
-                modifier = Modifier.align(alignment = Alignment.Center),
-                text = "=",
-                color = Color.White,
-                fontSize = 55.sp,
-                fontWeight = FontWeight.Light
-            )
         }
     }
 }
